@@ -233,7 +233,12 @@
         "members": [
           {
             "type": "CHOICE",
-            "members": []
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "comment"
+              }
+            ]
           },
           {
             "type": "CHOICE",
