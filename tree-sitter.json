@@ -7,7 +7,10 @@
       "file-types": [
         ".clue"
       ],
-      "injection-regex": "^clue$"
+      "injection-regex": "^clue$",
+      "highlights": [
+        "queries/highlights.scm"
+      ]
     }
   ],
   "metadata": {
