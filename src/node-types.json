@@ -263,7 +263,7 @@
     "fields": {
       "content": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "string_content",
@@ -292,6 +292,11 @@
         ]
       }
     }
+  },
+  {
+    "type": "string_content",
+    "named": false,
+    "fields": {}
   },
   {
     "type": "\u0000",
@@ -364,10 +369,6 @@
   {
     "type": "shebang",
     "named": true
-  },
-  {
-    "type": "string_content",
-    "named": false
   },
   {
     "type": "string_end",
