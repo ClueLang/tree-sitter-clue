@@ -49,11 +49,19 @@
       "required": true,
       "types": [
         {
-          "type": "function_impl",
+          "type": "function_body",
+          "named": true
+        },
+        {
+          "type": "function_body_paren",
           "named": true
         },
         {
           "type": "function_start",
+          "named": true
+        },
+        {
+          "type": "parameter_list",
           "named": true
         }
       ]
@@ -65,7 +73,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "break_statement",
@@ -76,6 +84,10 @@
           "named": true
         },
         {
+          "type": "function_statement",
+          "named": true
+        },
+        {
           "type": "return_statement",
           "named": true
         }
@@ -83,9 +95,20 @@
     }
   },
   {
-    "type": "function_impl",
+    "type": "function_statement",
     "named": true,
-    "fields": {},
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": true,
       "required": true,
@@ -99,11 +122,15 @@
           "named": true
         },
         {
-          "type": "function_end",
+          "type": "function_start",
           "named": true
         },
         {
-          "type": "function_start",
+          "type": "global",
+          "named": true
+        },
+        {
+          "type": "local",
           "named": true
         },
         {
@@ -178,6 +205,10 @@
       "types": [
         {
           "type": "comment",
+          "named": true
+        },
+        {
+          "type": "function_statement",
           "named": true
         },
         {
@@ -303,15 +334,19 @@
     "named": true
   },
   {
-    "type": "function_end",
-    "named": true
-  },
-  {
     "type": "function_start",
     "named": true
   },
   {
+    "type": "global",
+    "named": true
+  },
+  {
     "type": "identifier",
+    "named": true
+  },
+  {
+    "type": "local",
     "named": true
   },
   {
@@ -344,6 +379,14 @@
   },
   {
     "type": "true",
+    "named": false
+  },
+  {
+    "type": "{",
+    "named": false
+  },
+  {
+    "type": "}",
     "named": false
   }
 ]

@@ -13,8 +13,8 @@ const PREC = {
   DEFAULT: 1,
   PRIORITY: 2,
 
-  OR: 3, // => or
-  AND: 4, // => and
+  OR: 3, // => ||
+  AND: 4, // => &&
   COMPARE: 5, // => < <= == ~= >= >
   BIT_OR: 6, // => |
   BIT_NOT: 7, // => ~
@@ -23,7 +23,7 @@ const PREC = {
   CONCAT: 10, // => ..
   PLUS: 11, // => + -
   MULTI: 12, // => * /             // %
-  UNARY: 13, // => not # - ~
+  UNARY: 13, // => ! # -
   POWER: 14, // => ^
 
   STATEMENT: 15,
@@ -33,7 +33,13 @@ const PREC = {
 module.exports = grammar({
   name: "clue",
   extras: ($) => [/\n/, /\s/, $.comment],
-
+  inline: ($) => [
+    $._expression,
+    // $._field_expression,
+    // $.field_separator,
+    // $.prefix_exp,
+    $.function_impl,
+  ],
   rules: {
     // TODO: add the clue specific grammar rules
     program: ($) =>
@@ -56,6 +62,8 @@ module.exports = grammar({
     right_bracket: (_) => "]",
 
     _comma: (_) => ",",
+    local: (_) => "local",
+    global: (_) => "global",
     string: ($) =>
       choice(
         seq(
@@ -70,7 +78,7 @@ module.exports = grammar({
         ),
         seq(
           field("start", alias("`", "string_start")),
-          field("content", alias(/.*?/, "string_content")),
+          field("content", alias(/[^`]*/, "string_content")),
           field("end", alias("`", "string_end")),
         )
       ),
@@ -79,27 +87,34 @@ module.exports = grammar({
         PREC.STATEMENT,
         seq(
           choice(
-            // $.variable_declaration,
-            // $.function_call,
+            choice(
+              // $.variable_declaration,
+              // $.variable_assignment,
+              // $.function_call,
+              ";"
+            ),
             // $.do_statement,
             // $.while_statement,
             // $.repeat_statement,
             // $.if_statement,
             // $.for_statement,
-            // $.function_statement,
+            $.function_statement,
             $.comment
           ),
           optional(";"),
         ),
       ),
-    shebang: ($) => /#![^\n]*/,
-    _last_statement: ($) => choice($.return_statement, $.break_statement),
-    _chunk: ($) =>
-      choice(
-        seq(one_or_more($._statement), optional($._last_statement)),
-        $._last_statement,
-      ),
-    _block: ($) => $._chunk,
+    shebang: (_) => /#![^\n]*/,
+    _last_statement: ($) => seq(choice($.return_statement, $.break_statement), ";"),
+    _chunk: ($) => choice(
+      seq(one_or_more($._statement), optional($._last_statement)),
+      $._last_statement
+    ),
+    _block: ($) => seq(
+      "{",
+      optional($._chunk),
+      "}"
+    ),
     _expression: ($) =>
       prec.left(
         choice(
@@ -154,26 +169,30 @@ module.exports = grammar({
     ellipsis: (_) => "...",
 
     function_start: (_) => "fn",
-    function_name: ($) => $.identifier,
     function: ($) => seq($.function_start, $.function_impl),
     function_impl: ($) =>
       seq(
         alias($.left_paren, $.function_body_paren),
         optional($.parameter_list),
         alias($.right_paren, $.function_body_paren),
-        alias("{", $.function_start),
-        alias(optional($._block), $.function_body),
-        alias("}", $.function_end)
+        alias($._block, $.function_body),
       ),
     parameter_list: ($) =>
       choice(
         seq(
+
           prec.left(PREC.COMMA, list_of($.identifier, /,\s*/, false)),
           optional(seq(/,\s*/, $.ellipsis))
         ),
         $.ellipsis
       ),
-
+    function_statement: ($) =>
+      seq(
+        choice($.local, $.global),
+        $.function_start,
+        field("name", $.identifier),
+        $.function_impl
+      ),
     method_name: ($) =>
       seq(
         list_of($.identifier, alias(".", $.table_dot), false),
@@ -188,8 +207,8 @@ module.exports = grammar({
       ),
       seq(
         field("start", alias("/*", "comment_start")),
-        field("content", alias(/[^*]+/, "comment_content")),
-        field("end", alias("*/", "comment_end"))
+        field("content", alias(/[^*]*\*+([^/*][^*]*\*+)*/, "comment_content")),
+        field("end", alias("/", "comment_end"))
       )
     )
   },
@@ -207,4 +226,15 @@ function list_of(match, sep, trailing) {
   return trailing
     ? seq(match, any_amount_of(sep, match), optional(sep))
     : seq(match, any_amount_of(sep, match));
+}
+
+function quoted_string(quote) {
+  return seq(
+    field("start", alias(quote, "string_start")),
+    field("content", alias(repeat(choice(
+      new RegExp(`[^${quote}\\\\]`), // normal characters except quote or backslash
+      /\\./                          // escape sequences
+    )), "string_content")),
+    field("end", alias(quote, "string_end"))
+  );
 }

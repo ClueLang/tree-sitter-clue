@@ -88,6 +88,14 @@
       "type": "STRING",
       "value": ","
     },
+    "local": {
+      "type": "STRING",
+      "value": "local"
+    },
+    "global": {
+      "type": "STRING",
+      "value": "global"
+    },
     "string": {
       "type": "CHOICE",
       "members": [
@@ -235,6 +243,19 @@
             "type": "CHOICE",
             "members": [
               {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": ";"
+                  }
+                ]
+              },
+              {
+                "type": "SYMBOL",
+                "name": "function_statement"
+              },
+              {
                 "type": "SYMBOL",
                 "name": "comment"
               }
@@ -260,15 +281,24 @@
       "value": "#![^\\n]*"
     },
     "_last_statement": {
-      "type": "CHOICE",
+      "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "return_statement"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "return_statement"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "break_statement"
+            }
+          ]
         },
         {
-          "type": "SYMBOL",
-          "name": "break_statement"
+          "type": "STRING",
+          "value": ";"
         }
       ]
     },
@@ -311,8 +341,29 @@
       ]
     },
     "_block": {
-      "type": "SYMBOL",
-      "name": "_chunk"
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "{"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_chunk"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": "}"
+        }
+      ]
     },
     "_expression": {
       "type": "PREC_LEFT",
@@ -775,10 +826,6 @@
       "type": "STRING",
       "value": "fn"
     },
-    "function_name": {
-      "type": "SYMBOL",
-      "name": "identifier"
-    },
     "function": {
       "type": "SEQ",
       "members": [
@@ -828,37 +875,11 @@
         {
           "type": "ALIAS",
           "content": {
-            "type": "STRING",
-            "value": "{"
-          },
-          "named": true,
-          "value": "function_start"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "_block"
-              },
-              {
-                "type": "BLANK"
-              }
-            ]
+            "type": "SYMBOL",
+            "name": "_block"
           },
           "named": true,
           "value": "function_body"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "}"
-          },
-          "named": true,
-          "value": "function_end"
         }
       ]
     },
@@ -923,6 +944,40 @@
         {
           "type": "SYMBOL",
           "name": "ellipsis"
+        }
+      ]
+    },
+    "function_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "local"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "global"
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "function_start"
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "function_impl"
         }
       ]
     },
@@ -1094,7 +1149,7 @@
                 "type": "ALIAS",
                 "content": {
                   "type": "PATTERN",
-                  "value": "[^*]+"
+                  "value": "[^*]*\\*+([^/*][^*]*\\*+)*"
                 },
                 "named": false,
                 "value": "comment_content"
@@ -1107,7 +1162,7 @@
                 "type": "ALIAS",
                 "content": {
                   "type": "STRING",
-                  "value": "*/"
+                  "value": "/"
                 },
                 "named": false,
                 "value": "comment_end"
@@ -1135,6 +1190,9 @@
   "conflicts": [],
   "precedences": [],
   "externals": [],
-  "inline": [],
+  "inline": [
+    "_expression",
+    "function_impl"
+  ],
   "supertypes": []
 }
