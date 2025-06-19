@@ -86,6 +86,8 @@ module.exports = grammar({
     _comma: (_) => ",",
     local: (_) => "local",
     global: (_) => "global",
+    static: (_) => "static",
+    _visibility: ($) => choice($.local, $.global, $.static),
     string: ($) =>
       choice(quoted_string("'"), quoted_string('"'), quoted_string("`")),
     _statement: ($) =>
@@ -93,7 +95,7 @@ module.exports = grammar({
         PREC.STATEMENT,
         seq(
           choice(
-            // $.variable_declaration,
+            $.variable_declaration,
             $.variable_assignment,
             // $.function_call,
             // $.do_statement,
@@ -169,6 +171,12 @@ module.exports = grammar({
       return token(choice(decimal_literal, hex_literal));
     },
     ellipsis: (_) => "...",
+    variable_declaration: ($) =>
+      seq(
+        $._visibility,
+        list_of(field("name", $.identifier), ",", false),
+        optional(seq("=", list_of(field("value", $._expression), ",", false)))
+      ),
     variable_assignment: ($) =>
       seq(
         list_of(field("name", $.variable_declarator), ",", false),
@@ -193,7 +201,7 @@ module.exports = grammar({
       ),
     function_statement: ($) =>
       seq(
-        choice($.local, $.global),
+        $._visibility,
         $.function_start,
         field("name", $.identifier),
         $.function_impl
