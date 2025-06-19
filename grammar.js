@@ -2,6 +2,9 @@
  * @file Clue grammar for tree-sitter
  * @author MarkosTh09
  * @license MIT
+ *
+ * Based on tj's Lua grammar
+ * @see https://github.com/tjdevries/tree-sitter-lua
  */
 
 /// <reference types="tree-sitter-cli/dsl" />
@@ -37,9 +40,13 @@ module.exports = grammar({
     $._expression,
     // $._field_expression,
     // $.field_separator,
-    // $.prefix_exp,
+    $.prefix_exp,
     $.function_impl,
   ],
+  // conflicts: ($) => [
+  //   [$._prefix_exp, $.variable_declarator]
+  // ],
+  word: ($) => $.identifier,
   rules: {
     // TODO: add the clue specific grammar rules
     program: ($) =>
@@ -53,6 +60,23 @@ module.exports = grammar({
         )
       ),
     identifier: (_) => /[a-zA-Z_][a-zA-Z0-9_]*/,
+    _prefix_exp: ($) =>
+      choice(
+        $._var,
+        // $.function_call,
+        seq($.left_paren, $._expression, $.right_paren)
+      ),
+    prefix_exp: ($) => $._prefix_exp,
+    _var: ($) => prec(
+      PREC.PRIORITY,
+      choice(
+        $.identifier,
+        seq($.prefix_exp, "[", $._expression, "]"),
+        seq($.prefix_exp, ".", $.identifier)
+      )
+    ),
+    variable_declarator: ($) => $._var,
+
     left_paren: (_) => "(",
     right_paren: (_) => ")",
 
@@ -69,12 +93,9 @@ module.exports = grammar({
         PREC.STATEMENT,
         seq(
           choice(
-            choice(
-              // $.variable_declaration,
-              // $.variable_assignment,
-              // $.function_call,
-              ";"
-            ),
+            // $.variable_declaration,
+            $.variable_assignment,
+            // $.function_call,
             // $.do_statement,
             // $.while_statement,
             // $.repeat_statement,
@@ -98,13 +119,14 @@ module.exports = grammar({
     _expression: ($) =>
       prec.left(
         choice(
+          $.identifier,
           $.nil,
           $.boolean,
           $.number,
           $.string,
           $.ellipsis,
-          $.function
-          // $.prefix_exp,
+          $.function,
+          $.prefix_exp,
           // $.tableconstructor,
           // $.binary_operation,
           // $.unary_operation
@@ -147,7 +169,11 @@ module.exports = grammar({
       return token(choice(decimal_literal, hex_literal));
     },
     ellipsis: (_) => "...",
-
+    variable_assignment: ($) =>
+      seq(
+        list_of(field("name", $.variable_declarator), ",", false),
+        seq("=", list_of(field("value", $._expression), ",", false))
+      ),
     function_start: (_) => "fn",
     function: ($) => seq($.function_start, $.function_impl),
     function_impl: ($) =>
